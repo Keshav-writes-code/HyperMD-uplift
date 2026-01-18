@@ -1,14 +1,16 @@
-import { cm_t } from "./type"
-import { Token, Position, cmpPos } from "codemirror"
-import { HyperMDState, LinkType, HashtagType } from "../mode/hypermd";
-import { makeSymbol } from "./utils";
+import { cm_t } from './type'
+import { Token, Position, cmpPos } from 'codemirror'
+import { HyperMDState, LinkType, HashtagType } from '../mode/hypermd'
+import { makeSymbol } from './utils'
 
 export interface Span {
   type: string
   text: string
 
-  head: Token; head_i: number
-  tail?: Token; tail_i?: number
+  head: Token
+  head_i: number
+  tail?: Token
+  tail_i?: number
 
   /** the first char's index */
   begin: number
@@ -17,7 +19,15 @@ export interface Span {
   end: number
 }
 
-type SpanType = "em" | "strong" | "strikethrough" | "code" | "linkText" | "linkHref" | "task" | "hashtag"
+type SpanType =
+  | 'em'
+  | 'strong'
+  | 'strikethrough'
+  | 'code'
+  | 'linkText'
+  | 'linkHref'
+  | 'task'
+  | 'hashtag'
 
 const enum SpanAction {
   NOTHING = 0,
@@ -35,68 +45,86 @@ const enum SpanAction {
  */
 class LineSpanExtractor {
   constructor(public cm: cm_t) {
-    cm.on("change", (cm, change) => {
-      let line = change.from.line
+    cm.on('change', (cm, change) => {
+      const line = change.from.line
       if (this.caches.length > line) this.caches.splice(line)
     })
   }
 
-  public caches: Span[][] = new Array() // cache for each lines
+  public caches: Span[][] = [] // cache for each lines
 
   getTokenTypes(token: Token, prevToken?: Token): Record<SpanType, SpanAction> {
-    let prevState: HyperMDState = prevToken ? prevToken.state : {}
+    const prevState: HyperMDState = prevToken ? prevToken.state : {}
 
-    let state = token.state as HyperMDState
-    let styles = ' ' + token.type + ' '
-    let ans: Record<SpanType, SpanAction> = {
+    const state = token.state as HyperMDState
+    const styles = ' ' + token.type + ' '
+    const ans: Record<SpanType, SpanAction> = {
       // em
-      em: (state.em ? SpanAction.IS_THIS_TYPE
-        : prevState.em ? SpanAction.LEAVING_THIS_TYPE : SpanAction.NOTHING),
+      em: state.em
+        ? SpanAction.IS_THIS_TYPE
+        : prevState.em
+          ? SpanAction.LEAVING_THIS_TYPE
+          : SpanAction.NOTHING,
 
       // strikethrough
-      strikethrough: (state.strikethrough ? SpanAction.IS_THIS_TYPE
-        : prevState.strikethrough ? SpanAction.LEAVING_THIS_TYPE : SpanAction.NOTHING),
+      strikethrough: state.strikethrough
+        ? SpanAction.IS_THIS_TYPE
+        : prevState.strikethrough
+          ? SpanAction.LEAVING_THIS_TYPE
+          : SpanAction.NOTHING,
 
       // strong
-      strong: (state.strong ? SpanAction.IS_THIS_TYPE
-        : prevState.strong ? SpanAction.LEAVING_THIS_TYPE : SpanAction.NOTHING),
+      strong: state.strong
+        ? SpanAction.IS_THIS_TYPE
+        : prevState.strong
+          ? SpanAction.LEAVING_THIS_TYPE
+          : SpanAction.NOTHING,
 
       // code
-      code: (state.code ? SpanAction.IS_THIS_TYPE
-        : prevState.code ? SpanAction.LEAVING_THIS_TYPE : SpanAction.NOTHING),
+      code: state.code
+        ? SpanAction.IS_THIS_TYPE
+        : prevState.code
+          ? SpanAction.LEAVING_THIS_TYPE
+          : SpanAction.NOTHING,
 
       // linkText
-      linkText:
-        (state.linkText ?
-          (state.hmdLinkType === LinkType.NORMAL || state.hmdLinkType === LinkType.BARELINK2 ? SpanAction.IS_THIS_TYPE : SpanAction.NOTHING) :
-          (prevState.linkText ? SpanAction.LEAVING_THIS_TYPE : SpanAction.NOTHING)
-        ),
+      linkText: state.linkText
+        ? state.hmdLinkType === LinkType.NORMAL || state.hmdLinkType === LinkType.BARELINK2
+          ? SpanAction.IS_THIS_TYPE
+          : SpanAction.NOTHING
+        : prevState.linkText
+          ? SpanAction.LEAVING_THIS_TYPE
+          : SpanAction.NOTHING,
 
       // linkHref
       linkHref:
-        ((state.linkHref && !state.linkText) ?
-          SpanAction.IS_THIS_TYPE :
-          (!state.linkHref && !state.linkText && prevState.linkHref && !prevState.linkText) ? SpanAction.LEAVING_THIS_TYPE : SpanAction.NOTHING
-        ),
+        state.linkHref && !state.linkText
+          ? SpanAction.IS_THIS_TYPE
+          : !state.linkHref && !state.linkText && prevState.linkHref && !prevState.linkText
+            ? SpanAction.LEAVING_THIS_TYPE
+            : SpanAction.NOTHING,
 
       // task checkbox
-      task: (styles.indexOf(' formatting-task ') !== -1)
-        ? (SpanAction.IS_THIS_TYPE | SpanAction.LEAVING_THIS_TYPE)
-        : (SpanAction.NOTHING),
+      task:
+        styles.indexOf(' formatting-task ') !== -1
+          ? SpanAction.IS_THIS_TYPE | SpanAction.LEAVING_THIS_TYPE
+          : SpanAction.NOTHING,
 
       // hashtag
-      hashtag: (state.hmdHashtag ? SpanAction.IS_THIS_TYPE :
-        prevState.hmdHashtag ? SpanAction.LEAVING_THIS_TYPE : SpanAction.NOTHING),
+      hashtag: state.hmdHashtag
+        ? SpanAction.IS_THIS_TYPE
+        : prevState.hmdHashtag
+          ? SpanAction.LEAVING_THIS_TYPE
+          : SpanAction.NOTHING,
     }
     return ans
   }
 
-
-
   /** get spans from a line and update the cache */
   extract(lineNo: number, precise?: boolean) {
-    if (!precise) { // maybe cache is valid?
-      let cc = this.caches[lineNo]
+    if (!precise) {
+      // maybe cache is valid?
+      const cc = this.caches[lineNo]
       if (cc) return cc
     }
 
@@ -104,17 +132,19 @@ class LineSpanExtractor {
     const lineText = this.cm.getLine(lineNo)
     const lineLength = lineText.length
 
-    let ans: Span[] = []
-    let unclosed: Partial<Record<SpanType, Span>> = {}
+    const ans: Span[] = []
+    const unclosed: Partial<Record<SpanType, Span>> = {}
 
     for (let i = 0; i < tokens.length; i++) {
       const token = tokens[i]
       const types = this.getTokenTypes(token, tokens[i - 1])
 
-      for (let type in types) {
+      for (const type in types) {
         let span = unclosed[type] as Span
-        if (types[type] & SpanAction.IS_THIS_TYPE) { // style is active
-          if (!span) { // create a new span if needed
+        if (types[type] & SpanAction.IS_THIS_TYPE) {
+          // style is active
+          if (!span) {
+            // create a new span if needed
             span = {
               type,
               begin: token.start,
@@ -130,8 +160,10 @@ class LineSpanExtractor {
           }
         }
 
-        if (types[type] & SpanAction.LEAVING_THIS_TYPE) { // a style is exiting
-          if (span) { // close an unclosed span
+        if (types[type] & SpanAction.LEAVING_THIS_TYPE) {
+          // a style is exiting
+          if (span) {
+            // close an unclosed span
             span.tail = token
             span.tail_i = i
             span.end = token.end
@@ -147,11 +179,11 @@ class LineSpanExtractor {
   }
 
   findSpansAt(pos: Position) {
-    let spans = this.extract(pos.line)
-    let ch = pos.ch
-    let ans = [] as Span[]
+    const spans = this.extract(pos.line)
+    const ch = pos.ch
+    const ans = [] as Span[]
     for (let i = 0; i < spans.length; i++) {
-      let span = spans[i]
+      const span = spans[i]
       if (span.begin > ch) break
       if (ch >= span.begin && span.end >= ch) ans.push(span)
     }
@@ -160,10 +192,10 @@ class LineSpanExtractor {
   }
 
   findSpanWithTypeAt(pos: Position, type: SpanType) {
-    let spans = this.extract(pos.line)
-    let ch = pos.ch
+    const spans = this.extract(pos.line)
+    const ch = pos.ch
     for (let i = 0; i < spans.length; i++) {
-      let span = spans[i]
+      const span = spans[i]
       if (span.begin > ch) break
       if (ch >= span.begin && span.end >= ch && span.type === type) return span
     }
@@ -172,7 +204,7 @@ class LineSpanExtractor {
   }
 }
 
-const extractor_symbol = makeSymbol("LineSpanExtractor")
+const extractor_symbol = makeSymbol('LineSpanExtractor')
 
 /**
  * Get a `LineSpanExtractor` to extract spans from CodeMirror parsed lines
@@ -184,6 +216,6 @@ const extractor_symbol = makeSymbol("LineSpanExtractor")
  */
 export function getLineSpanExtractor(cm: cm_t): LineSpanExtractor {
   if (extractor_symbol in cm) return cm[extractor_symbol] as LineSpanExtractor
-  let inst = cm[extractor_symbol] = new LineSpanExtractor(cm)
+  const inst = (cm[extractor_symbol] = new LineSpanExtractor(cm))
   return inst
 }

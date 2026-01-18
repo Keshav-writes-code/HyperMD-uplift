@@ -10,7 +10,6 @@ import { LineHandle } from 'codemirror'
 import { cm_t } from '../core/type'
 import { HyperMDState, TableType } from '../mode/hypermd'
 
-
 /********************************************************************************** */
 //#region Addon Options
 
@@ -24,10 +23,10 @@ export const defaultOption: Options = {
 }
 
 export const suggestedOption: Partial<Options> = {
-  enabled: true,  // we recommend lazy users to enable this fantastic addon!
+  enabled: true, // we recommend lazy users to enable this fantastic addon!
 }
 
-export type OptionValueType = Partial<Options> | boolean;
+export type OptionValueType = Partial<Options> | boolean
 
 declare global {
   namespace HyperMD {
@@ -45,22 +44,26 @@ declare global {
 suggestedEditorConfig.hmdTableAlign = suggestedOption
 normalVisualConfig.hmdTableAlign = false
 
-CodeMirror.defineOption("hmdTableAlign", defaultOption, function (cm: cm_t, newVal: OptionValueType) {
-  const enabled = !!newVal
+CodeMirror.defineOption(
+  'hmdTableAlign',
+  defaultOption,
+  function (cm: cm_t, newVal: OptionValueType) {
+    const enabled = !!newVal
 
-  ///// convert newVal's type to `Partial<Options>`, if it is not.
+    ///// convert newVal's type to `Partial<Options>`, if it is not.
 
-  if (!enabled || typeof newVal === "boolean") {
-    newVal = { enabled: enabled }
-  }
+    if (!enabled || typeof newVal === 'boolean') {
+      newVal = { enabled: enabled }
+    }
 
-  ///// apply config and write new values into cm
+    ///// apply config and write new values into cm
 
-  var inst = getAddon(cm)
-  for (var k in defaultOption) {
-    inst[k] = (k in newVal) ? newVal[k] : defaultOption[k]
-  }
-})
+    const inst = getAddon(cm)
+    for (const k in defaultOption) {
+      inst[k] = k in newVal ? newVal[k] : defaultOption[k]
+    }
+  },
+)
 
 //#endregion
 
@@ -68,28 +71,28 @@ CodeMirror.defineOption("hmdTableAlign", defaultOption, function (cm: cm_t, newV
 //#region Addon Class
 
 export class TableAlign implements Addon.Addon, Options /* if needed */ {
-  enabled: boolean;
+  enabled: boolean
 
   constructor(public cm: cm_t) {
     // options will be initialized to defaultOption (if exists)
     // add your code here
 
     new FlipFlop(
-      /* ON  */() => {
-        cm.on("renderLine", this._procLine)
-        cm.on("update", this.updateStyle)
+      /* ON  */ () => {
+        cm.on('renderLine', this._procLine)
+        cm.on('update', this.updateStyle)
         cm.refresh()
         document.head.appendChild(this.styleEl)
       },
-      /* OFF */() => {
-        cm.off("renderLine", this._procLine)
-        cm.off("update", this.updateStyle)
+      /* OFF */ () => {
+        cm.off('renderLine', this._procLine)
+        cm.off('update', this.updateStyle)
         document.head.removeChild(this.styleEl)
-      }
-    ).bind(this, "enabled", true)
+      },
+    ).bind(this, 'enabled', true)
   }
 
-  public styleEl = document.createElement("style")
+  public styleEl = document.createElement('style')
 
   private _lastCSS: string
 
@@ -120,11 +123,11 @@ export class TableAlign implements Addon.Addon, Options /* if needed */ {
     const columnStyles = eolState.hmdTableColumns
     const tableID = eolState.hmdTableID
 
-    var columnIdx = eolState.hmdTable === TableType.NORMAL ? -1 : 0
-    var columnSpan = this.makeColumn(columnIdx, columnStyles[columnIdx] || "dummy", tableID)
-    var columnContentSpan = columnSpan.firstElementChild
+    let columnIdx = eolState.hmdTable === TableType.NORMAL ? -1 : 0
+    let columnSpan = this.makeColumn(columnIdx, columnStyles[columnIdx] || 'dummy', tableID)
+    let columnContentSpan = columnSpan.firstElementChild
     for (const el of lineSpanChildren) {
-      const elClass = el.nodeType === Node.ELEMENT_NODE && (el as HTMLElement).className || ""
+      const elClass = (el.nodeType === Node.ELEMENT_NODE && (el as HTMLElement).className) || ''
       if (/cm-hmd-table-sep/.test(elClass)) {
         // found a "|", and a column is finished
         columnIdx++
@@ -132,7 +135,7 @@ export class TableAlign implements Addon.Addon, Options /* if needed */ {
         lineSpan.appendChild(columnSpan)
         lineSpan.appendChild(el)
 
-        columnSpan = this.makeColumn(columnIdx, columnStyles[columnIdx] || "dummy", tableID)
+        columnSpan = this.makeColumn(columnIdx, columnStyles[columnIdx] || 'dummy', tableID)
         columnContentSpan = columnSpan.firstElementChild
       } else {
         columnContentSpan.appendChild(el)
@@ -147,14 +150,14 @@ export class TableAlign implements Addon.Addon, Options /* if needed */ {
    * note that put content into column.firstElementChild
    */
   makeColumn(index: number, style: string, tableID: string): HTMLSpanElement {
-    var span = document.createElement("span")
+    const span = document.createElement('span')
     span.className = `hmd-table-column hmd-table-column-${index} hmd-table-column-${style}`
-    span.setAttribute("data-column", "" + index)
-    span.setAttribute("data-table-id", tableID)
+    span.setAttribute('data-column', '' + index)
+    span.setAttribute('data-table-id', tableID)
 
-    var span2 = document.createElement("span")
-    span2.className = "hmd-table-column-content"
-    span2.setAttribute("data-column", "" + index)
+    const span2 = document.createElement('span')
+    span2.className = 'hmd-table-column-content'
+    span2.setAttribute('data-column', '' + index)
 
     span.appendChild(span2)
     return span
@@ -164,21 +167,21 @@ export class TableAlign implements Addon.Addon, Options /* if needed */ {
   measure() {
     const cm = this.cm
     const lineDiv = cm.display.lineDiv as HTMLDivElement // contains every <pre> line
-    const contentSpans = lineDiv.querySelectorAll(".hmd-table-column-content")
+    const contentSpans = lineDiv.querySelectorAll('.hmd-table-column-content')
 
     /** every table's every column's width in px */
-    var ans: { [tableID: string]: number[] } = {}
+    const ans: { [tableID: string]: number[] } = {}
 
     for (let i = 0; i < contentSpans.length; i++) {
       const contentSpan = contentSpans[i] as HTMLSpanElement
       const column = contentSpan.parentElement as HTMLSpanElement
 
-      const tableID = column.getAttribute("data-table-id")
-      const columnIdx = ~~column.getAttribute("data-column")
+      const tableID = column.getAttribute('data-table-id')
+      const columnIdx = ~~column.getAttribute('data-column')
       const width = contentSpan.offsetWidth + 1 // +1 because browsers turn 311.3 into 312
 
       if (!(tableID in ans)) ans[tableID] = []
-      var columnWidths = ans[tableID]
+      const columnWidths = ans[tableID]
       while (columnWidths.length <= columnIdx) columnWidths.push(0)
       if (columnWidths[columnIdx] < width) columnWidths[columnIdx] = width
     }
@@ -188,21 +191,27 @@ export class TableAlign implements Addon.Addon, Options /* if needed */ {
 
   /** Generate CSS */
   makeCSS(measures: { [tableID: string]: number[] }): string {
-    var rules: string[] = []
+    const rules: string[] = []
     for (const tableID in measures) {
       const columnWidths = measures[tableID]
       const rulePrefix = `pre.HyperMD-table-row.HyperMD-table_${tableID} .hmd-table-column-`
       for (let columnIdx = 0; columnIdx < columnWidths.length; columnIdx++) {
         const width = columnWidths[columnIdx]
-        rules.push(`${rulePrefix}${columnIdx} { min-width: ${width + .5}px }`)
+        rules.push(`${rulePrefix}${columnIdx} { min-width: ${width + 0.5}px }`)
       }
     }
-    return rules.join("\n")
+    return rules.join('\n')
   }
 }
 
 //#endregion
 
 /** ADDON GETTER (Singleton Pattern): a editor can have only one TableAlign instance */
-export const getAddon = Addon.Getter("TableAlign", TableAlign, defaultOption)
-declare global { namespace HyperMD { interface HelperCollection { TableAlign?: TableAlign } } }
+export const getAddon = Addon.Getter('TableAlign', TableAlign, defaultOption)
+declare global {
+  namespace HyperMD {
+    interface HelperCollection {
+      TableAlign?: TableAlign
+    }
+  }
+}

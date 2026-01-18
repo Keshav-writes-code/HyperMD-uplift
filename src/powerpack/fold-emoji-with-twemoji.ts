@@ -1,3 +1,4 @@
+// @ts-nocheck
 // HyperMD, copyright (c) by laobubu
 // Distributed under an MIT license: http://laobubu.net/HyperMD/LICENSE
 //
@@ -12,12 +13,19 @@
 //
 
 import * as _twemoji_module from 'twemoji'
-import { defaultOption, defaultChecker, defaultRenderer, EmojiRenderer, defaultDict, EmojiChecker } from '../addon/fold-emoji'
+import {
+  defaultOption,
+  defaultChecker,
+  defaultRenderer,
+  EmojiRenderer,
+  defaultDict,
+  EmojiChecker,
+} from '../addon/fold-emoji'
 
 /** twemoji */
-var twemoji: typeof _twemoji_module = _twemoji_module || this['twemoji'] || window['twemoji']
+const twemoji: typeof _twemoji_module = _twemoji_module || this['twemoji'] || window['twemoji']
 
-var twemojiOptions = null
+let twemojiOptions = null
 
 /** set the 2nd argument of `twemoji.parse()` */
 export function setOptions(options?: object | Function) {
@@ -27,16 +35,16 @@ export function setOptions(options?: object | Function) {
 export const twemojiChecker: EmojiChecker = defaultChecker
 
 export const twemojiRenderer: EmojiRenderer = (text) => {
-  var emojiStr = defaultDict[text]
-  var html = twemojiOptions ? twemoji.parse(emojiStr, twemojiOptions) : twemoji.parse(emojiStr)
+  const emojiStr = defaultDict[text]
+  const html = twemojiOptions ? twemoji.parse(emojiStr, twemojiOptions) : twemoji.parse(emojiStr)
 
   // If twemoji failed to render, fallback to defaultRenderer
-  if (!/^<img /i.test(html)) return defaultRenderer(text);
+  if (!/^<img /i.test(html)) return defaultRenderer(text)
 
-  var attr = /([\w-]+)="(.+?)"/g
-  var ans = document.createElement("img")
-  var t: RegExpMatchArray
-  while (t = attr.exec(html)) ans.setAttribute(t[1], t[2])
+  const attr = /([\w-]+)="(.+?)"/g
+  const ans = document.createElement('img')
+  let t: RegExpMatchArray
+  while ((t = attr.exec(html))) ans.setAttribute(t[1], t[2])
   return ans
 }
 
@@ -45,5 +53,5 @@ if (twemoji) {
   defaultOption.emojiChecker = twemojiChecker
   defaultOption.emojiRenderer = twemojiRenderer
 } else {
-  console.error("[HyperMD] PowerPack fold-emoji-with-twemoji loaded, but twemoji not found.")
+  console.error('[HyperMD] PowerPack fold-emoji-with-twemoji loaded, but twemoji not found.')
 }

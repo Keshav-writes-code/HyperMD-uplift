@@ -40,20 +40,20 @@ export type RendererFunc = (html: string, pos: Position, cm: cm_t) => HTMLElemen
  * Create HTMLElement from HTML string and do special process with HyperMD.ReadLink
  */
 export var defaultRenderer: RendererFunc = (html: string, pos: Position, cm: cm_t): HTMLElement => {
-  var tagBegin = /^<(\w+)\s*/.exec(html)
+  const tagBegin = /^<(\w+)\s*/.exec(html)
   if (!tagBegin) return null
 
-  var tagName = tagBegin[1]
-  var ans = document.createElement(tagName)
+  const tagName = tagBegin[1]
+  const ans = document.createElement(tagName)
 
-  var propRE = /([\w\:\-]+)(?:\s*=\s*((['"]).*?\3|\S+))?\s*/g
-  var propLastIndex = propRE.lastIndex = tagBegin[0].length
-  var tmp: RegExpExecArray
-  while (tmp = propRE.exec(html)) {
+  const propRE = /([\w\:\-]+)(?:\s*=\s*((['"]).*?\3|\S+))?\s*/g
+  let propLastIndex = (propRE.lastIndex = tagBegin[0].length)
+  let tmp: RegExpExecArray
+  while ((tmp = propRE.exec(html))) {
     if (tmp.index > propLastIndex) break // emmm
 
-    var propName = tmp[1]
-    var propValue = tmp[2] // could be wrapped by " or '
+    const propName = tmp[1]
+    let propValue = tmp[2] // could be wrapped by " or '
     if (propValue && /^['"]/.test(propValue)) propValue = propValue.slice(1, -1)
 
     ans.setAttribute(propName, propValue)
@@ -62,14 +62,14 @@ export var defaultRenderer: RendererFunc = (html: string, pos: Position, cm: cm_
 
   if ('innerHTML' in ans) {
     // node may contain innerHTML
-    var startCh = html.indexOf('>', propLastIndex) + 1
-    var endCh = html.length
+    const startCh = html.indexOf('>', propLastIndex) + 1
+    let endCh = html.length
 
-    if (tmp = new RegExp(`</${tagName}\\s*>\\s*$`, "i").exec(html)) {
+    if ((tmp = new RegExp(`</${tagName}\\s*>\\s*$`, 'i').exec(html))) {
       endCh = tmp.index
     }
 
-    var innerHTML = html.slice(startCh, endCh)
+    const innerHTML = html.slice(startCh, endCh)
     if (innerHTML) ans.innerHTML = innerHTML
 
     // resolve relative URLs and change default behavoirs
@@ -79,16 +79,16 @@ export var defaultRenderer: RendererFunc = (html: string, pos: Position, cm: cm_
 
       if (tagName === 'a') {
         // for links, if target not set, add target="_blank"
-        if (!el.getAttribute("target")) el.setAttribute("target", "_blank")
+        if (!el.getAttribute('target')) el.setAttribute('target', '_blank')
       }
 
       // Then, resovle relative URLs
 
-      const urlAttrs: string[] = ({
-        a: ["href"],
-        img: ["src"],
-        iframe: ["src"],
-      })[tagName];
+      const urlAttrs: string[] = {
+        a: ['href'],
+        img: ['src'],
+        iframe: ['src'],
+      }[tagName]
 
       if (urlAttrs) {
         for (let i = 0; i < urlAttrs.length; i++) {
@@ -105,9 +105,9 @@ export var defaultRenderer: RendererFunc = (html: string, pos: Position, cm: cm_
 
 /********************************************************************************** */
 
-const stubClass = "hmd-fold-html-stub"
-const stubClassOmittable = "hmd-fold-html-stub omittable"
-const stubClassHighlight = "hmd-fold-html-stub highlight"
+const stubClass = 'hmd-fold-html-stub'
+const stubClassOmittable = 'hmd-fold-html-stub omittable'
+const stubClassHighlight = 'hmd-fold-html-stub highlight'
 
 /********************************************************************************** */
 //#region Folder
@@ -119,7 +119,12 @@ const stubClassHighlight = "hmd-fold-html-stub highlight"
 export const HTMLFolder: FolderFunc = (stream, token) => {
   if (!token.type || !/ hmd-html-begin/.test(token.type)) return null
   const endInfo = stream.findNext(/ hmd-html-\w+/, true) // find next html start/end token
-  if (!endInfo || !/ hmd-html-end/.test(endInfo.token.type) || / hmd-html-unclosed/.test(endInfo.token.type)) return null
+  if (
+    !endInfo ||
+    !/ hmd-html-end/.test(endInfo.token.type) ||
+    / hmd-html-unclosed/.test(endInfo.token.type)
+  )
+    return null
 
   const cm = stream.cm
   const from: Position = { line: stream.lineNo, ch: token.start }
@@ -139,8 +144,8 @@ export const HTMLFolder: FolderFunc = (stream, token) => {
   //   }
   // }
 
-  var addon = getAddon(cm)
-  var html: string = cm.getRange(from, to)
+  const addon = getAddon(cm)
+  const html: string = cm.getRange(from, to)
 
   if (!addon.checker(html, from, cm)) return null // security check
 
@@ -151,12 +156,12 @@ export const HTMLFolder: FolderFunc = (stream, token) => {
 
   // now we are ready to fold and render!
 
-  var marker = addon.renderAndInsert(html, from, to, inlineMode)
+  const marker = addon.renderAndInsert(html, from, to, inlineMode)
   return marker
 }
 //#endregion
 
-registerFolder("html", HTMLFolder, false)
+registerFolder('html', HTMLFolder, false)
 
 /********************************************************************************** */
 //#region Addon Options
@@ -178,15 +183,13 @@ export interface Options extends Addon.AddonOptions {
 export const defaultOption: Options = {
   checker: defaultChecker,
   renderer: defaultRenderer,
-  stubText: "<HTML>",
+  stubText: '<HTML>',
   isolatedTagName: /^(?:div|pre|form|table|iframe|ul|ol|input|textarea|p|summary|a)$/i,
 }
 
-export const suggestedOption: Partial<Options> = {
+export const suggestedOption: Partial<Options> = {}
 
-}
-
-export type OptionValueType = Partial<Options> | CheckerFunc;
+export type OptionValueType = Partial<Options> | CheckerFunc
 
 declare global {
   namespace HyperMD {
@@ -205,27 +208,28 @@ declare global {
 
 suggestedEditorConfig.hmdFoldHTML = suggestedOption
 
-CodeMirror.defineOption("hmdFoldHTML", defaultOption, function (cm: cm_t, newVal: OptionValueType) {
-
+CodeMirror.defineOption('hmdFoldHTML', defaultOption, function (cm: cm_t, newVal: OptionValueType) {
   ///// convert newVal's type to `Partial<Options>`, if it is not.
 
-  if (!newVal) { newVal = {} }
-  else if (typeof newVal == 'function') { newVal = { checker: newVal } }
-  else if (typeof newVal != 'object') {
-    console.warn('[HyperMD][FoldHTML] incorrect option value type');
+  if (!newVal) {
+    newVal = {}
+  } else if (typeof newVal == 'function') {
+    newVal = { checker: newVal }
+  } else if (typeof newVal != 'object') {
+    console.warn('[HyperMD][FoldHTML] incorrect option value type')
     newVal = {}
   }
 
   ///// apply config and write new values into cm
 
-  var inst = getAddon(cm)
-  for (var k in defaultOption) {
-    inst[k] = (k in newVal) ? newVal[k] : defaultOption[k]
+  const inst = getAddon(cm)
+  for (const k in defaultOption) {
+    inst[k] = k in newVal ? newVal[k] : defaultOption[k]
   }
 
   ///// Type Check
   if (inst.isolatedTagName && !(inst.isolatedTagName instanceof RegExp)) {
-    console.error("[HyperMD][FoldHTML] option isolatedTagName only accepts RegExp")
+    console.error('[HyperMD][FoldHTML] option isolatedTagName only accepts RegExp')
     inst.isolatedTagName = defaultOption.isolatedTagName
   }
 })
@@ -236,10 +240,10 @@ CodeMirror.defineOption("hmdFoldHTML", defaultOption, function (cm: cm_t, newVal
 //#region Addon Class
 
 export class FoldHTML implements Addon.Addon, Options {
-  renderer: RendererFunc;
-  isolatedTagName: RegExp;
-  stubText: string;
-  checker: CheckerFunc;
+  renderer: RendererFunc
+  isolatedTagName: RegExp
+  stubText: string
+  checker: CheckerFunc
 
   constructor(public cm: cm_t) {
     // options will be initialized to defaultOption when constructor is finished
@@ -248,26 +252,32 @@ export class FoldHTML implements Addon.Addon, Options {
   /**
    * Render HTML, insert into editor and return the marker
    */
-  renderAndInsert(html: string, from: CodeMirror.Position, to: CodeMirror.Position, inlineMode?: boolean): CodeMirror.TextMarker {
+  renderAndInsert(
+    html: string,
+    from: CodeMirror.Position,
+    to: CodeMirror.Position,
+    inlineMode?: boolean,
+  ): CodeMirror.TextMarker {
     const cm = this.cm
 
-    var stub = this.makeStub()
-    var el = this.renderer(html, from, cm)
-    var breakFn = () => breakMark(cm, marker)
+    const stub = this.makeStub()
+    const el = this.renderer(html, from, cm)
+    const breakFn = () => breakMark(cm, marker)
 
     if (!el) return null
 
-    stub.addEventListener("click", breakFn, false)
-    if (!el.tagName.match(this.isolatedTagName || /^$/)) el.addEventListener("click", breakFn, false)
+    stub.addEventListener('click', breakFn, false)
+    if (!el.tagName.match(this.isolatedTagName || /^$/))
+      el.addEventListener('click', breakFn, false)
 
-    var replacedWith: HTMLElement
-    var marker: CodeMirror.TextMarker
+    let replacedWith: HTMLElement
+    let marker: CodeMirror.TextMarker
 
     if (inlineMode) {
       /** put HTML inline */
-      let span = document.createElement("span")
-      span.setAttribute("class", "hmd-fold-html")
-      span.setAttribute("style", "display: inline-block")
+      const span = document.createElement('span')
+      span.setAttribute('class', 'hmd-fold-html')
+      span.setAttribute('style', 'display: inline-block')
       span.appendChild(stub)
       span.appendChild(el)
 
@@ -278,8 +288,9 @@ export class FoldHTML implements Addon.Addon, Options {
         const computedStyle = getComputedStyle(el)
         const getStyle = (name) => computedStyle.getPropertyValue(name)
 
-        var floating =
-          w < 10 || h < 10 ||
+        const floating =
+          w < 10 ||
+          h < 10 ||
           !/^relative|static$/i.test(getStyle('position')) ||
           !/^none$/i.test(getStyle('float'))
 
@@ -293,7 +304,7 @@ export class FoldHTML implements Addon.Addon, Options {
 
       // Marker is not created yet. Bind events later
       setTimeout(() => {
-        marker.on("clear", () => {
+        marker.on('clear', () => {
           watcher.stop()
         })
       }, 0)
@@ -301,29 +312,29 @@ export class FoldHTML implements Addon.Addon, Options {
       /** use lineWidget to insert element */
       replacedWith = stub
 
-      let lineWidget = cm.addLineWidget(to.line, el, {
+      const lineWidget = cm.addLineWidget(to.line, el, {
         above: false,
         coverGutter: false,
         noHScroll: false,
         showIfHidden: false,
       })
 
-      let highlightON = () => stub.className = stubClassHighlight
-      let highlightOFF = () => stub.className = stubClass
+      const highlightON = () => (stub.className = stubClassHighlight)
+      const highlightOFF = () => (stub.className = stubClass)
 
-      el.addEventListener("mouseenter", highlightON, false)
-      el.addEventListener("mouseleave", highlightOFF, false)
+      el.addEventListener('mouseenter', highlightON, false)
+      el.addEventListener('mouseleave', highlightOFF, false)
 
       var watcher = watchSize(el, () => lineWidget.changed())
       watcher.check()
 
       // Marker is not created yet. Bind events later
       setTimeout(() => {
-        marker.on("clear", () => {
+        marker.on('clear', () => {
           watcher.stop()
           lineWidget.clear()
-          el.removeEventListener("mouseenter", highlightON, false)
-          el.removeEventListener("mouseleave", highlightOFF, false)
+          el.removeEventListener('mouseenter', highlightON, false)
+          el.removeEventListener('mouseleave', highlightOFF, false)
         })
       }, 0)
     }
@@ -336,8 +347,8 @@ export class FoldHTML implements Addon.Addon, Options {
   }
 
   makeStub() {
-    var ans = document.createElement('span')
-    ans.setAttribute("class", stubClass)
+    const ans = document.createElement('span')
+    ans.setAttribute('class', stubClass)
     ans.textContent = this.stubText || '<HTML>'
 
     return ans
@@ -347,5 +358,11 @@ export class FoldHTML implements Addon.Addon, Options {
 //#endregion
 
 /** ADDON GETTER (Singleton Pattern): a editor can have only one FoldHTML instance */
-export const getAddon = Addon.Getter("FoldHTML", FoldHTML, defaultOption /** if has options */)
-declare global { namespace HyperMD { interface HelperCollection { FoldHTML?: FoldHTML } } }
+export const getAddon = Addon.Getter('FoldHTML', FoldHTML, defaultOption /** if has options */)
+declare global {
+  namespace HyperMD {
+    interface HelperCollection {
+      FoldHTML?: FoldHTML
+    }
+  }
+}

@@ -4,12 +4,6 @@ These are interesting and optional modules/patches. In most cases, you might not
 
 All goods are placed in `goods` directory. You can access them via `path_to_hypermd/goods/xxxxxxx.js`.
 
-
-
-
-
-
-
 ## patch-requirejs
 
 Patch RequireJS so that you can `require` css files directly.
@@ -19,9 +13,6 @@ Patch RequireJS so that you can `require` css files directly.
 1. Load RequireJS via a `<script>` tag
 2. Load this patch via a `<script>` tag
 3. Use RequireJS
-
-
-
 
 ## complete-emoji
 
@@ -35,7 +26,7 @@ This module is currently experimental.
 
 First of all, you have to import this module.
 `const CompleteEmoji = require("hypermd/goods/complete-emoji")`
-*(If is in plain browser env, all you need is to include the `<script>` tag)*
+_(If is in plain browser env, all you need is to include the `<script>` tag)_
 
 Then, add these options to your HyperMD `editor`:
 
@@ -53,7 +44,7 @@ Optionally, you can show the auto-complete box when user inputs a colon `:`
 
 ```js
 // show AutoComplete when ":" is inputed
-editor.on("inputRead", function (cm, change) {
+editor.on('inputRead', function (cm, change) {
   if (change.text.length === 1 && change.text[0] === ':') editor.showHint()
 })
 ```

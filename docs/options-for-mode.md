@@ -6,7 +6,6 @@ For example, if your website wants to support #hashtag in Markdown, enable the s
 
 Once HyperMD loaded, you may set your CodeMirror editors to _hypermd_ mode.
 
-
 # ✨ Usage
 
 ## While Initializing
@@ -20,11 +19,11 @@ var cm = HyperMD.fromTextArea(myTextarea, {
   /* ...other editor options */
 
   mode: {
-    name: "hypermd",
+    name: 'hypermd',
 
     /* mode options goes here*/
     hashtag: true, // example. enable hashtag
-  }
+  },
 })
 ```
 
@@ -33,26 +32,23 @@ var cm = HyperMD.fromTextArea(myTextarea, {
 Use `setOption` method of the editor instance.
 
 ```js
-cm.setOption("mode", {
-  name: "hypermd",
+cm.setOption('mode', {
+  name: 'hypermd',
   /* mode options goes here*/
 })
 ```
-
-
 
 # 📕 Mode Options
 
 ## front_matter
 
-🎨 **Type**: `boolean`   📦 **Default**: `true`
+🎨 **Type**: `boolean` 📦 **Default**: `true`
 
 Parse [YAML frontmatter](http://jekyllrb.com/docs/frontmatter/)
 
-
 ## math
 
-🎨 **Type**: `boolean`   📦 **Default**: `true`
+🎨 **Type**: `boolean` 📦 **Default**: `true`
 
 Parse TeX formula wrapped by `$` or `$$`.
 
@@ -61,6 +57,7 @@ Parse TeX formula wrapped by `$` or `$$`.
 Inline Formula: $\LaTeX$ and $$y=kx+b$$
 
 Display Formula:
+
 $$
 \begin{bmatrix}
    \cos \theta       &&     -\sin \theta    \\
@@ -70,7 +67,7 @@ $$
 
 ## table
 
-🎨 **Type**: `boolean`   📦 **Default**: `true`
+🎨 **Type**: `boolean` 📦 **Default**: `true`
 
 Parse simple Markdown table.
 
@@ -80,18 +77,17 @@ Parse simple Markdown table.
 
 🚩 **Example**:
 
-| table | title   |
+| table | title |
 | ----- | ----- |
 | lorem | ipsue |
 
-table | title
------ | -----
-lorem | ipsue
-
+| table | title |
+| ----- | ----- |
+| lorem | ipsue |
 
 ## toc
 
-🎨 **Type**: `boolean`   📦 **Default**: `true`
+🎨 **Type**: `boolean` 📦 **Default**: `true`
 
 Style `[TOC]` placeholder.
 
@@ -99,10 +95,9 @@ Style `[TOC]` placeholder.
 
 [ToC]
 
-
 ## orgModeMarkup
 
-🎨 **Type**: `boolean`   📦 **Default**: `true`
+🎨 **Type**: `boolean` 📦 **Default**: `true`
 
 Style orgmode-like markup `#+attribute`. Just **styling**.
 
@@ -115,11 +110,9 @@ Maybe someday I'll make one to generate well-formatted papers :smile:
 -- laobubu
 #+END_QUOTE
 
-
-
 ## hashtag
 
-🎨 **Type**: `boolean`   📦 **Default**: `false`
+🎨 **Type**: `boolean` 📦 **Default**: `false`
 
 Support #hashtag syntax. This will also make _addon/click_ supports hashtag-clicking events.
 
@@ -127,12 +120,10 @@ Support #hashtag syntax. This will also make _addon/click_ supports hashtag-clic
 
 #hypermd #codemirror/markdown #tag with space#
 
-
-
 ## ... and more
 
 hypermd mode supports [CodeMirror markdown's mode options][cm-markdown] too
 
-----
+---
 
 [cm-markdown]: https://codemirror.net/mode/markdown/index.html
