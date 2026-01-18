@@ -56,9 +56,9 @@ const editor: cm_t = HyperMD.fromTextArea(document.getElementById('editor') as H
 If you are not using a bundler, you can use the UMD build from the `dist` folder.
 
 ```html
-<link rel="stylesheet" href="path/to/hypermd/dist/style.css" />
+<link rel="stylesheet" href="path/to/hypermd-uplift/dist/style.css" />
 <script src="path/to/codemirror.js"></script>
-<script src="path/to/hypermd/dist/index.umd.js"></script>
+<script src="path/to/hypermd-uplift/dist/index.umd.cjs"></script>
 
 <script>
   var editor = HyperMD.fromTextArea(document.getElementById('editor'))
