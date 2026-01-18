@@ -3,13 +3,13 @@
   "version": "0.4.0",
   "description": "A WYSIWYG Markdown editor for the modern web, based on CodeMirror 5.",
   "type": "module",
-  "main": "./dist/index.umd.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.umd.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.umd.js",
+      "import": "./dist/index.js",
+      "require": "./dist/index.umd.cjs",
       "types": "./dist/index.d.ts"
     },
     "./style.css": "./dist/style.css"
