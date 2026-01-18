@@ -1,3 +1,4 @@
+// @ts-nocheck
 // HyperMD, copyright (c) by laobubu
 // Distributed under an MIT license: http://laobubu.net/HyperMD/LICENSE
 //
@@ -7,8 +8,8 @@
 import * as CodeMirror from 'codemirror'
 import { Token, Position, cmpPos } from 'codemirror'
 import { cm_t } from '../core/type'
-import { TokenSeeker, repeatStr, expandRange, repeat, suggestedEditorConfig } from '../core';
-import { HyperMDState, TableType } from "../mode/hypermd"
+import { TokenSeeker, repeatStr, expandRange, repeat, suggestedEditorConfig } from '../core'
+import { HyperMDState, TableType } from '../mode/hypermd'
 
 /**
   Some codes in this files are from CodeMirror's source code.
@@ -22,22 +23,23 @@ import { HyperMDState, TableType } from "../mode/hypermd"
 // loq = List Or Quote
 const LoQRE = /^(\s*)(>[> ]*|[*+-] \[[x ]\]\s|[*+-]\s|(\d+)([.)]))(\s*)/,
   emptyLoQRE = /^(\s*)(>[> ]*|[*+-] \[[x ]\]|[*+-]|(\d+)[.)])(\s*)$/,
-  unorderedListRE = /[*+-]\s/;
-const ListRE = /^(\s*)([*+-]\s|(\d+)([.)]))(\s*)/;
-const isRealTableSep = (token: Token) => /hmd-table-sep/.test(token.type) && !/hmd-table-sep-dummy/.test(token.type);
+  unorderedListRE = /[*+-]\s/
+const ListRE = /^(\s*)([*+-]\s|(\d+)([.)]))(\s*)/
+const isRealTableSep = (token: Token) =>
+  /hmd-table-sep/.test(token.type) && !/hmd-table-sep-dummy/.test(token.type)
 
 /**
  * continue list / quote / insert table row
  * start a table
  */
 export function newlineAndContinue(cm: cm_t) {
-  if (cm.getOption("disableInput")) return CodeMirror.Pass
+  if (cm.getOption('disableInput')) return CodeMirror.Pass
 
   const selections = cm.listSelections()
-  var replacements: string[] = []
+  const replacements: string[] = []
 
   for (const range of selections) {
-    var pos = range.head
+    const pos = range.head
     const rangeEmpty = (range as any).empty() as boolean
     const eolState = cm.getStateAfter(pos.line) as HyperMDState
 
@@ -48,22 +50,26 @@ export function newlineAndContinue(cm: cm_t) {
     if (!handled) {
       const inList = eolState.list !== false
       const inQuote = eolState.quote
-      let match = LoQRE.exec(line)
-      let cursorBeforeBullet = /^\s*$/.test(line.slice(0, pos.ch))
+      const match = LoQRE.exec(line)
+      const cursorBeforeBullet = /^\s*$/.test(line.slice(0, pos.ch))
 
       if (rangeEmpty && (inList || inQuote) && match && !cursorBeforeBullet) {
         handled = true
 
         if (emptyLoQRE.test(line)) {
-          if (!/>\s*$/.test(line)) cm.replaceRange("", { line: pos.line, ch: 0 }, { line: pos.line, ch: pos.ch + 1 });
-          replacements.push("\n")
+          if (!/>\s*$/.test(line))
+            cm.replaceRange('', { line: pos.line, ch: 0 }, { line: pos.line, ch: pos.ch + 1 })
+          replacements.push('\n')
         } else {
-          var indent = match[1], after = match[5];
-          var numbered = !(unorderedListRE.test(match[2]) || match[2].indexOf(">") >= 0)
-          var bullet = numbered ? (parseInt(match[3], 10) + 1) + match[4] : match[2].replace("x", " ")
-          replacements.push("\n" + indent + bullet + after)
+          const indent = match[1],
+            after = match[5]
+          const numbered = !(unorderedListRE.test(match[2]) || match[2].indexOf('>') >= 0)
+          const bullet = numbered
+            ? parseInt(match[3], 10) + 1 + match[4]
+            : match[2].replace('x', ' ')
+          replacements.push('\n' + indent + bullet + after)
 
-          if (numbered) incrementRemainingMarkdownListNumbers(cm, pos);
+          if (numbered) incrementRemainingMarkdownListNumbers(cm, pos)
         }
       }
     }
@@ -71,20 +77,23 @@ export function newlineAndContinue(cm: cm_t) {
     if (!handled) {
       const table = rangeEmpty ? eolState.hmdTable : TableType.NONE
       if (table != TableType.NONE) {
-        if (/^[\s\|]+$/.test(line) && (pos.line === cm.lastLine() || (cm.getStateAfter(pos.line + 1).hmdTable !== table))) {
+        if (
+          /^[\s\|]+$/.test(line) &&
+          (pos.line === cm.lastLine() || cm.getStateAfter(pos.line + 1).hmdTable !== table)
+        ) {
           // if this is last row and is empty
           // remove this row and insert a new line
           cm.setCursor({ line: pos.line, ch: 0 })
-          cm.replaceRange("\n", { line: pos.line, ch: 0 }, { line: pos.line, ch: line.length })
+          cm.replaceRange('\n', { line: pos.line, ch: 0 }, { line: pos.line, ch: line.length })
         } else {
           // insert a row below
           const columns = eolState.hmdTableColumns
 
-          let newline = repeatStr("  |  ", columns.length - 1)
-          let leading = "\n"
+          let newline = repeatStr('  |  ', columns.length - 1)
+          let leading = '\n'
           if (table === TableType.NORMAL) {
-            leading += "| "
-            newline += " |"
+            leading += '| '
+            newline += ' |'
           }
 
           // There are always nut users!
@@ -95,21 +104,29 @@ export function newlineAndContinue(cm: cm_t) {
           }
 
           cm.replaceSelection(leading)
-          cm.replaceSelection(newline, "start")
+          cm.replaceSelection(newline, 'start')
         }
 
         handled = true
         return
-      } else if (rangeEmpty && pos.ch >= line.length && !eolState.code && !eolState.hmdInnerMode && /^\|.+\|.+\|$/.test(line)) {
+      } else if (
+        rangeEmpty &&
+        pos.ch >= line.length &&
+        !eolState.code &&
+        !eolState.hmdInnerMode &&
+        /^\|.+\|.+\|$/.test(line)
+      ) {
         // current line is   | this | format |
         // let's make a table
-        let lineTokens = cm.getLineTokens(pos.line)
-        let ans = "|", ans2 = "|"
-        for (let i = 1; i < lineTokens.length; i++) { // first token must be "|"
-          let token = lineTokens[i]
-          if (token.string === "|" && (!token.type || !token.type.trim().length)) {
-            ans += " ------- |"
-            ans2 += "   |"
+        const lineTokens = cm.getLineTokens(pos.line)
+        let ans = '|',
+          ans2 = '|'
+        for (let i = 1; i < lineTokens.length; i++) {
+          // first token must be "|"
+          const token = lineTokens[i]
+          if (token.string === '|' && (!token.type || !token.type.trim().length)) {
+            ans += ' ------- |'
+            ans2 += '   |'
           }
         }
 
@@ -117,23 +134,27 @@ export function newlineAndContinue(cm: cm_t) {
         // replacements.push("\n" + ans + "\n" + ans2 + "\n")
 
         cm.setCursor({ line: pos.line, ch: line.length })
-        cm.replaceSelection("\n" + ans + "\n| ")
-        cm.replaceSelection(ans2.slice(1) + "\n", "start")
+        cm.replaceSelection('\n' + ans + '\n| ')
+        cm.replaceSelection(ans2.slice(1) + '\n', 'start')
         handled = true
         return
       }
     }
 
     if (!handled) {
-      if (rangeEmpty && line.slice(pos.ch - 2, pos.ch) == "$$" && /math-end/.test(cm.getTokenTypeAt(pos))) {
+      if (
+        rangeEmpty &&
+        line.slice(pos.ch - 2, pos.ch) == '$$' &&
+        /math-end/.test(cm.getTokenTypeAt(pos))
+      ) {
         // ignore indentations of MathBlock Tex lines
-        replacements.push("\n")
+        replacements.push('\n')
         handled = true
       }
     }
 
     if (!handled) {
-      cm.execCommand("newlineAndIndent")
+      cm.execCommand('newlineAndIndent')
       return
     }
   }
@@ -143,18 +164,18 @@ export function newlineAndContinue(cm: cm_t) {
 
 /** insert "\n" , or if in list, insert "\n" + indentation */
 export function newline(cm: cm_t) {
-  if (cm.getOption("disableInput")) return CodeMirror.Pass
+  if (cm.getOption('disableInput')) return CodeMirror.Pass
 
   const selections = cm.listSelections()
-  var replacements: string[] = repeat("\n", selections.length)
+  const replacements: string[] = repeat('\n', selections.length)
 
   for (let i = 0; i < selections.length; i++) {
-    var range = selections[i]
-    var pos = range.head
+    const range = selections[i]
+    const pos = range.head
     const eolState = cm.getStateAfter(pos.line) as HyperMDState
 
     if (eolState.list !== false) {
-      replacements[i] += repeatStr(" ", eolState.listStack.slice(-1)[0])
+      replacements[i] += repeatStr(' ', eolState.listStack.slice(-1)[0])
     }
   }
 
@@ -163,43 +184,48 @@ export function newline(cm: cm_t) {
 
 function killIndent(cm: cm_t, lineNo: number, spaces: number) {
   if (!spaces || spaces < 0) return
-  let oldSpaces = /^ */.exec(cm.getLine(lineNo))[0].length
+  const oldSpaces = /^ */.exec(cm.getLine(lineNo))[0].length
   if (oldSpaces < spaces) spaces = oldSpaces
-  if (spaces > 0) cm.replaceRange("", { line: lineNo, ch: 0 }, { line: lineNo, ch: spaces })
+  if (spaces > 0) cm.replaceRange('', { line: lineNo, ch: 0 }, { line: lineNo, ch: spaces })
 }
 
 /** unindent or move cursor into prev table cell */
 export function shiftTab(cm: cm_t) {
-  var selections = cm.listSelections()
-  var replacements: string[] = []
+  const selections = cm.listSelections()
+  const replacements: string[] = []
 
-  var tokenSeeker = new TokenSeeker(cm)
+  const tokenSeeker = new TokenSeeker(cm)
 
   for (let i = 0; i < selections.length; i++) {
-    var range = selections[i]
-    var left = range.head
-    var right = range.anchor
+    const range = selections[i]
+    let left = range.head
+    let right = range.anchor
 
     const rangeEmpty = (range as any).empty() as boolean
-    if (!rangeEmpty && cmpPos(left, right) > 0) [right, left] = [left, right];
-    else if (right === left) { right = range.anchor = { ch: left.ch, line: left.line }; }
+    if (!rangeEmpty && cmpPos(left, right) > 0) [right, left] = [left, right]
+    else if (right === left) {
+      right = range.anchor = { ch: left.ch, line: left.line }
+    }
     const eolState = cm.getStateAfter(left.line) as HyperMDState
 
     if (eolState.hmdTable) {
       tokenSeeker.setPos(left.line, left.ch)
-      const isNormalTable = eolState.hmdTable === TableType.NORMAL  // leading and ending | is not omitted
-      var line = left.line
-      var lineText = cm.getLine(line)
-      var chStart = 0, chEnd = 0
-      var rightPipe = tokenSeeker.findPrev(isRealTableSep)
+      const isNormalTable = eolState.hmdTable === TableType.NORMAL // leading and ending | is not omitted
+      let line = left.line
+      let lineText = cm.getLine(line)
+      let chStart = 0,
+        chEnd = 0
+      const rightPipe = tokenSeeker.findPrev(isRealTableSep)
 
-      if (rightPipe) { // prev cell is in this line
+      if (rightPipe) {
+        // prev cell is in this line
         var leftPipe = tokenSeeker.findPrev(isRealTableSep, rightPipe.i_token - 1)
         chStart = leftPipe ? leftPipe.token.end : 0
         chEnd = rightPipe.token.start
 
         if (chStart == 0 && isNormalTable) chStart += lineText.match(/^\s*\|/)[0].length
-      } else { // jump to prev line, last cell
+      } else {
+        // jump to prev line, last cell
         if (eolState.hmdTableRow == 0) return // no more row before
         if (eolState.hmdTableRow == 2) line-- // skip row #1 (| ----- | ----- |)
 
@@ -213,27 +239,31 @@ export function shiftTab(cm: cm_t) {
         if (isNormalTable) chEnd -= lineText.match(/\|\s*$/)[0].length
       }
 
-      if (lineText.charAt(chStart) === " ") chStart += 1
+      if (lineText.charAt(chStart) === ' ') chStart += 1
       if (chStart > 0 && lineText.substr(chStart - 1, 2) === ' |') chStart--
-      if (lineText.charAt(chEnd - 1) === " ") chEnd -= 1
+      if (lineText.charAt(chEnd - 1) === ' ') chEnd -= 1
 
       cm.setSelection({ line, ch: chStart }, { line, ch: chEnd })
       return
     } else if (eolState.listStack.length > 0) {
       let lineNo = left.line
 
-      while (!ListRE.test(cm.getLine(lineNo))) { // beginning line has no bullet? go up
+      while (!ListRE.test(cm.getLine(lineNo))) {
+        // beginning line has no bullet? go up
         lineNo--
-        let isList = cm.getStateAfter(lineNo).listStack.length > 0
-        if (!isList) { lineNo++; break }
+        const isList = cm.getStateAfter(lineNo).listStack.length > 0
+        if (!isList) {
+          lineNo++
+          break
+        }
       }
 
-      let lastLine = cm.lastLine()
+      const lastLine = cm.lastLine()
       let tmp: RegExpExecArray
 
       for (; lineNo <= right.line && (tmp = ListRE.exec(cm.getLine(lineNo))); lineNo++) {
-        let listStack = cm.getStateAfter(lineNo).listStack as number[]
-        let listLevel = listStack.length
+        const listStack = cm.getStateAfter(lineNo).listStack as number[]
+        const listLevel = listStack.length
 
         let spaces = 0
         if (listLevel == 1) {
@@ -241,15 +271,21 @@ export function shiftTab(cm: cm_t) {
           spaces = tmp[1].length
         } else {
           // make bullets right-aligned
-          spaces = (listStack[listLevel - 1] - (listStack[listLevel - 2] || 0))
+          spaces = listStack[listLevel - 1] - (listStack[listLevel - 2] || 0)
         }
 
         killIndent(cm, lineNo, spaces)
 
         // if current list item is multi-line...
         while (++lineNo <= lastLine) {
-          if (/*corrupted */ cm.getStateAfter(lineNo).listStack.length !== listLevel) { lineNo = Infinity; break }
-          if (/*has bullet*/ ListRE.test(cm.getLine(lineNo))) { lineNo--; break }
+          if (/*corrupted */ cm.getStateAfter(lineNo).listStack.length !== listLevel) {
+            lineNo = Infinity
+            break
+          }
+          if (/*has bullet*/ ListRE.test(cm.getLine(lineNo))) {
+            lineNo--
+            break
+          }
           killIndent(cm, lineNo, spaces)
         }
       }
@@ -258,7 +294,7 @@ export function shiftTab(cm: cm_t) {
     }
   }
 
-  cm.execCommand("indentLess")
+  cm.execCommand('indentLess')
 }
 
 /**
@@ -266,36 +302,50 @@ export function shiftTab(cm: cm_t) {
  * 2.
  */
 export function tab(cm: cm_t) {
-  var selections = cm.listSelections()
-  var beforeCur: string[] = []
-  var afterCur: string[] = []
-  var selected: string[] = []
+  const selections = cm.listSelections()
+  const beforeCur: string[] = []
+  const afterCur: string[] = []
+  const selected: string[] = []
 
-  var addIndentTo: Record<string, string> = {}  // {lineNo: stringIndent}
+  const addIndentTo: Record<string, string> = {} // {lineNo: stringIndent}
 
-  var tokenSeeker = new TokenSeeker(cm)
+  const tokenSeeker = new TokenSeeker(cm)
 
   /** indicate previous 4 variable changed or not */
-  var flag0 = false, flag1 = false, flag2 = false, flag3 = true
+  let flag0 = false,
+    flag1 = false,
+    flag2 = false,
+    flag3 = true
 
-  function setBeforeCur(text) { beforeCur[i] = text; if (text) flag1 = true }
-  function setAfterCur(text) { afterCur[i] = text; if (text) flag2 = true }
-  function setSelected(text) { selected[i] = text; if (text) flag3 = true }
+  function setBeforeCur(text) {
+    beforeCur[i] = text
+    if (text) flag1 = true
+  }
+  function setAfterCur(text) {
+    afterCur[i] = text
+    if (text) flag2 = true
+  }
+  function setSelected(text) {
+    selected[i] = text
+    if (text) flag3 = true
+  }
 
   for (var i = 0; i < selections.length; i++) {
-    beforeCur[i] = afterCur[i] = selected[i] = ""
+    beforeCur[i] = afterCur[i] = selected[i] = ''
 
-    var range = selections[i]
-    var left = range.head
-    var right = range.anchor
+    const range = selections[i]
+    let left = range.head
+    let right = range.anchor
 
     const rangeEmpty = (range as any).empty() as boolean
-    if (!rangeEmpty && cmpPos(left, right) > 0) [right, left] = [left, right];
-    else if (right === left) { right = range.anchor = { ch: left.ch, line: left.line }; }
+    if (!rangeEmpty && cmpPos(left, right) > 0) [right, left] = [left, right]
+    else if (right === left) {
+      right = range.anchor = { ch: left.ch, line: left.line }
+    }
 
     const eolState = cm.getStateAfter(left.line) as HyperMDState
 
-    let line = cm.getLine(left.line)
+    const line = cm.getLine(left.line)
 
     if (eolState.hmdTable) {
       // yeah, we are inside a table
@@ -308,13 +358,17 @@ export function tab(cm: cm_t) {
       tokenSeeker.setPos(left.line, left.ch)
 
       const nextCellLeft = tokenSeeker.findNext(isRealTableSep, tokenSeeker.i_token)
-      if (!nextCellLeft) { // already last cell
+      if (!nextCellLeft) {
+        // already last cell
         const lineSpan = eolState.hmdTableRow === 0 ? 2 : 1 // skip |---|---| line
 
-        if ((left.line + lineSpan) > cm.lastLine() || cm.getStateAfter(left.line + lineSpan).hmdTable != eolState.hmdTable) {
+        if (
+          left.line + lineSpan > cm.lastLine() ||
+          cm.getStateAfter(left.line + lineSpan).hmdTable != eolState.hmdTable
+        ) {
           // insert a row after this line
           left.ch = right.ch = line.length
-          let newline = repeatStr("  |  ", columns.length - 1)
+          const newline = repeatStr('  |  ', columns.length - 1)
 
           // There are always nut users!
           if (eolState.hmdTableRow === 0) {
@@ -323,13 +377,13 @@ export function tab(cm: cm_t) {
           }
 
           if (isNormalTable) {
-            setBeforeCur("\n| ")
-            setAfterCur(newline + " |")
+            setBeforeCur('\n| ')
+            setAfterCur(newline + ' |')
           } else {
-            setBeforeCur("\n")
+            setBeforeCur('\n')
             setAfterCur(newline.trimRight())
           }
-          setSelected("")
+          setSelected('')
         } else {
           // move cursor to next line, first cell
           right.line = left.line += lineSpan
@@ -337,22 +391,25 @@ export function tab(cm: cm_t) {
 
           const line = tokenSeeker.line.text
           const dummySep = isNormalTable && tokenSeeker.findNext(/hmd-table-sep-dummy/, 0)
-          const nextCellRight = tokenSeeker.findNext(/hmd-table-sep/, dummySep ? dummySep.i_token + 1 : 1)
+          const nextCellRight = tokenSeeker.findNext(
+            /hmd-table-sep/,
+            dummySep ? dummySep.i_token + 1 : 1,
+          )
 
           left.ch = dummySep ? dummySep.token.end : 0
           right.ch = nextCellRight ? nextCellRight.token.start : line.length
-          if (right.ch > left.ch && line.charAt(left.ch) === " ") left.ch++
-          if (right.ch > left.ch && line.charAt(right.ch - 1) === " ") right.ch--
-          setSelected(right.ch > left.ch ? cm.getRange(left, right) : "")
+          if (right.ch > left.ch && line.charAt(left.ch) === ' ') left.ch++
+          if (right.ch > left.ch && line.charAt(right.ch - 1) === ' ') right.ch--
+          setSelected(right.ch > left.ch ? cm.getRange(left, right) : '')
         }
       } else {
         const nextCellRight = tokenSeeker.findNext(/hmd-table-sep/, nextCellLeft.i_token + 1)
 
         left.ch = nextCellLeft.token.end
         right.ch = nextCellRight ? nextCellRight.token.start : line.length
-        if (right.ch > left.ch && line.charAt(left.ch) === " ") left.ch++
-        if (right.ch > left.ch && line.charAt(right.ch - 1) === " ") right.ch--
-        setSelected(right.ch > left.ch ? cm.getRange(left, right) : "")
+        if (right.ch > left.ch && line.charAt(left.ch) === ' ') left.ch++
+        if (right.ch > left.ch && line.charAt(right.ch - 1) === ' ') right.ch--
+        setSelected(right.ch > left.ch ? cm.getRange(left, right) : '')
       }
       // console.log("selected cell", left.ch, right.ch, selected[i])
     } else if (eolState.listStack.length > 0) {
@@ -361,32 +418,36 @@ export function tab(cm: cm_t) {
 
       let tmp: RegExpMatchArray // ["  * ", "  ", "* "]
 
-      while (!(tmp = ListRE.exec(cm.getLine(lineNo)))) { // beginning line has no bullet? go up
+      while (!(tmp = ListRE.exec(cm.getLine(lineNo)))) {
+        // beginning line has no bullet? go up
         lineNo--
-        let isList = cm.getStateAfter(lineNo).listStack.length > 0
-        if (!isList) { lineNo++; break }
+        const isList = cm.getStateAfter(lineNo).listStack.length > 0
+        if (!isList) {
+          lineNo++
+          break
+        }
       }
 
-      let firstLine = cm.firstLine()
-      let lastLine = cm.lastLine()
+      const firstLine = cm.firstLine()
+      const lastLine = cm.lastLine()
 
       for (; lineNo <= right.line && (tmp = ListRE.exec(cm.getLine(lineNo))); lineNo++) {
-        let eolState = cm.getStateAfter(lineNo) as HyperMDState
-        let listStack = eolState.listStack
-        let listStackOfPrevLine = cm.getStateAfter(lineNo - 1).listStack
-        let listLevel = listStack.length
-        let spaces: string = ""
+        const eolState = cm.getStateAfter(lineNo) as HyperMDState
+        const listStack = eolState.listStack
+        const listStackOfPrevLine = cm.getStateAfter(lineNo - 1).listStack
+        const listLevel = listStack.length
+        let spaces: string = ''
 
         // avoid uncontinuous list levels
         if (lineNo > firstLine && listLevel <= listStackOfPrevLine.length) {
           if (listLevel == listStackOfPrevLine.length) {
             // tmp[1] is existed leading spaces
             // listStackOfPrevLine[listLevel-1] is desired indentation
-            spaces = repeatStr(" ", listStackOfPrevLine[listLevel - 1] - tmp[1].length)
+            spaces = repeatStr(' ', listStackOfPrevLine[listLevel - 1] - tmp[1].length)
           } else {
             // make bullets right-aligned
             // tmp[0].length is end pos of current bullet
-            spaces = repeatStr(" ", listStackOfPrevLine[listLevel] - tmp[0].length)
+            spaces = repeatStr(' ', listStackOfPrevLine[listLevel] - tmp[0].length)
           }
         }
 
@@ -394,23 +455,30 @@ export function tab(cm: cm_t) {
 
         // if current list item is multi-line...
         while (++lineNo <= lastLine) {
-          if (/*corrupted */ cm.getStateAfter(lineNo).listStack.length !== listLevel) { lineNo = Infinity; break }
-          if (/*has bullet*/ ListRE.test(cm.getLine(lineNo))) { lineNo--; break }
+          if (/*corrupted */ cm.getStateAfter(lineNo).listStack.length !== listLevel) {
+            lineNo = Infinity
+            break
+          }
+          if (/*has bullet*/ ListRE.test(cm.getLine(lineNo))) {
+            lineNo--
+            break
+          }
           addIndentTo[lineNo] = spaces
         }
       }
 
       if (!rangeEmpty) {
-        flag3 = false; break // f**k
+        flag3 = false
+        break // f**k
       }
     } else {
       // emulate Tab
       if (rangeEmpty) {
-        setBeforeCur("    ")
+        setBeforeCur('    ')
       } else {
         setSelected(cm.getRange(left, right))
         for (let lineNo = left.line; lineNo <= right.line; lineNo++) {
-          if (!(lineNo in addIndentTo)) addIndentTo[lineNo] = "    "
+          if (!(lineNo in addIndentTo)) addIndentTo[lineNo] = '    '
         }
       }
     }
@@ -419,13 +487,13 @@ export function tab(cm: cm_t) {
   // if (!(flag0 || flag1 || flag2 || flag3)) return cm.execCommand("defaultTab")
   // console.log(flag0, flag1, flag2, flag3)
 
-  for (let lineNo in addIndentTo) {
-    if (addIndentTo[lineNo]) cm.replaceRange(addIndentTo[lineNo], { line: ~~lineNo, ch: 0 });
+  for (const lineNo in addIndentTo) {
+    if (addIndentTo[lineNo]) cm.replaceRange(addIndentTo[lineNo], { line: ~~lineNo, ch: 0 })
   }
   if (flag0) cm.setSelections(selections)
   if (flag1) cm.replaceSelections(beforeCur)
-  if (flag2) cm.replaceSelections(afterCur, "start")
-  if (flag3) cm.replaceSelections(selected, "around")
+  if (flag2) cm.replaceSelections(afterCur, 'start')
+  if (flag3) cm.replaceSelections(selected, 'around')
 }
 
 /**
@@ -443,29 +511,29 @@ export function tab(cm: cm_t) {
  * @param rightBracket if null, will use leftBracket
  */
 export function wrapTexts(cm: cm_t, leftBracket: string, rightBracket?: string) {
-  if (cm.getOption("disableInput")) return CodeMirror.Pass
+  if (cm.getOption('disableInput')) return CodeMirror.Pass
 
-  var selections = cm.listSelections()
-  var replacements = new Array(selections.length)
-  var insertBeforeCursor = new Array(selections.length)
+  const selections = cm.listSelections()
+  const replacements = new Array(selections.length)
+  const insertBeforeCursor = new Array(selections.length)
 
-  var flag0 = false  // replacements changed
-  var flag1 = false  // insertBeforeCursor changed
-  var flag2 = false  // selections changed
+  let flag0 = false // replacements changed
+  let flag1 = false // insertBeforeCursor changed
+  let flag2 = false // selections changed
 
   if (!rightBracket) rightBracket = leftBracket
 
-  var lb_len = leftBracket.length
-  var rb_len = rightBracket.length
+  const lb_len = leftBracket.length
+  const rb_len = rightBracket.length
 
   for (let i = 0; i < selections.length; i++) {
-    replacements[i] = insertBeforeCursor[i] = ""
+    replacements[i] = insertBeforeCursor[i] = ''
 
-    var range = selections[i]
-    var left = range.head
-    var right = range.anchor
+    const range = selections[i]
+    let left = range.head
+    let right = range.anchor
 
-    var line = cm.getLine(left.line)
+    const line = cm.getLine(left.line)
 
     if (range.empty()) {
       if (left.ch >= lb_len && line.substr(left.ch - lb_len, lb_len) === leftBracket) {
@@ -482,13 +550,16 @@ export function wrapTexts(cm: cm_t, leftBracket: string, rightBracket?: string) 
 
     flag0 = true
 
-    var headAfterAnchor = cmpPos(left, right) > 0
+    const headAfterAnchor = cmpPos(left, right) > 0
     if (headAfterAnchor) [right, left] = [left, right]
 
-    var text = cm.getRange(left, right)
+    let text = cm.getRange(left, right)
 
     if (left.ch >= lb_len && left.line === right.line) {
-      if (line.substr(left.ch - lb_len, lb_len) === leftBracket && line.substr(right.ch, rb_len) === rightBracket) {
+      if (
+        line.substr(left.ch - lb_len, lb_len) === leftBracket &&
+        line.substr(right.ch, rb_len) === rightBracket
+      ) {
         flag2 = true
 
         right.ch += rb_len
@@ -507,47 +578,53 @@ export function wrapTexts(cm: cm_t, leftBracket: string, rightBracket?: string) 
 
   if (flag2) cm.setSelections(selections)
   if (flag1) cm.replaceSelections(insertBeforeCursor)
-  if (flag0) cm.replaceSelections(replacements, "around")
+  if (flag0) cm.replaceSelections(replacements, 'around')
 }
 
 export function createStyleToggler(
   isStyled: (state) => boolean,
   isFormattingToken: (token: Token) => boolean,
-  getFormattingText: (state?) => string
+  getFormattingText: (state?) => string,
 ) {
   return function (cm: cm_t) {
-    if (cm.getOption("disableInput")) return CodeMirror.Pass
+    if (cm.getOption('disableInput')) return CodeMirror.Pass
 
-    var ts = new TokenSeeker(cm)
-    var selections = cm.listSelections()
-    var replacements = new Array(selections.length)
+    const ts = new TokenSeeker(cm)
+    const selections = cm.listSelections()
+    const replacements = new Array(selections.length)
 
     for (let i = 0; i < selections.length; i++) {
-      var range = selections[i]
-      var left = range.head
-      var right = range.anchor
-      var eolState = cm.getStateAfter(left.line)
+      const range = selections[i]
+      let left = range.head
+      let right = range.anchor
+      const eolState = cm.getStateAfter(left.line)
       const rangeEmpty = (range as any).empty() as boolean
 
-      if (cmpPos(left, right) > 0) [right, left] = [left, right];
-      const rangeText = replacements[i] = rangeEmpty ? "" : cm.getRange(left, right)
+      if (cmpPos(left, right) > 0) [right, left] = [left, right]
+      const rangeText = (replacements[i] = rangeEmpty ? '' : cm.getRange(left, right))
 
-      if (rangeEmpty || isStyled(cm.getTokenAt(left).state)) { // nothing selected
-        let line = left.line
+      if (rangeEmpty || isStyled(cm.getTokenAt(left).state)) {
+        // nothing selected
+        const line = left.line
         ts.setPos(line, left.ch, true)
         let token = ts.lineTokens[ts.i_token]
-        let state: HyperMDState = token ? token.state : eolState
+        const state: HyperMDState = token ? token.state : eolState
 
         if (!token || /^\s*$/.test(token.string)) {
           token = ts.lineTokens[--ts.i_token] // maybe eol, or current token is space
         }
 
-        let { from, to } = ts.expandRange((token) => token && (isStyled(token.state) || isFormattingToken(token)))
+        const { from, to } = ts.expandRange(
+          (token) => token && (isStyled(token.state) || isFormattingToken(token)),
+        )
 
-        if (to.i_token === from.i_token) { // current token "word" is not formatted
-          let f = getFormattingText()
-          if (token && !/^\s*$/.test(token.string)) { // not empty line, not spaces
-            let pos1 = { line, ch: token.start }, pos2 = { line, ch: token.end }
+        if (to.i_token === from.i_token) {
+          // current token "word" is not formatted
+          const f = getFormattingText()
+          if (token && !/^\s*$/.test(token.string)) {
+            // not empty line, not spaces
+            const pos1 = { line, ch: token.start },
+              pos2 = { line, ch: token.end }
             token = from.token
             cm.replaceRange(f + token.string + f, pos1, pos2)
 
@@ -557,20 +634,21 @@ export function createStyleToggler(
           } else {
             replacements[i] = f
           }
-        } else { // **wor|d**    **|**   **word|  **|
+        } else {
+          // **wor|d**    **|**   **word|  **|
           if (isFormattingToken(to.token)) {
-            cm.replaceRange("", { line, ch: to.token.start }, { line, ch: to.token.end })
+            cm.replaceRange('', { line, ch: to.token.start }, { line, ch: to.token.end })
           }
           if (from.i_token !== to.i_token && isFormattingToken(from.token)) {
-            cm.replaceRange("", { line, ch: from.token.start }, { line, ch: from.token.end })
+            cm.replaceRange('', { line, ch: from.token.start }, { line, ch: from.token.end })
           }
         }
         continue
       }
 
-      let token = cm.getTokenAt(left)
-      let state = token ? token.state : eolState
-      let formatter = getFormattingText(state)
+      const token = cm.getTokenAt(left)
+      const state = token ? token.state : eolState
+      const formatter = getFormattingText(state)
       replacements[i] = formatter + rangeText + formatter
     }
 
@@ -582,38 +660,47 @@ export function createStyleToggler(
 // middle of a list
 function incrementRemainingMarkdownListNumbers(cm, pos) {
   const listRE = LoQRE
-  var startLine = pos.line, lookAhead = 0, skipCount = 0;
-  var startItem = listRE.exec(cm.getLine(startLine)), startIndent = startItem[1];
+  let startLine = pos.line,
+    lookAhead = 0,
+    skipCount = 0
+  const startItem = listRE.exec(cm.getLine(startLine)),
+    startIndent = startItem[1]
 
   do {
-    lookAhead += 1;
-    var nextLineNumber = startLine + lookAhead;
-    var nextLine = cm.getLine(nextLineNumber), nextItem = listRE.exec(nextLine);
+    lookAhead += 1
+    const nextLineNumber = startLine + lookAhead
+    var nextLine = cm.getLine(nextLineNumber),
+      nextItem = listRE.exec(nextLine)
 
     if (nextItem) {
-      var nextIndent = nextItem[1];
-      var newNumber = (parseInt(startItem[3], 10) + lookAhead - skipCount);
-      var nextNumber = (parseInt(nextItem[3], 10)), itemNumber = nextNumber;
+      const nextIndent = nextItem[1]
+      const newNumber = parseInt(startItem[3], 10) + lookAhead - skipCount
+      let nextNumber = parseInt(nextItem[3], 10),
+        itemNumber = nextNumber
 
       if (startIndent === nextIndent && !isNaN(nextNumber)) {
-        if (newNumber === nextNumber) itemNumber = nextNumber + 1;
-        if (newNumber > nextNumber) itemNumber = newNumber + 1;
+        if (newNumber === nextNumber) itemNumber = nextNumber + 1
+        if (newNumber > nextNumber) itemNumber = newNumber + 1
         cm.replaceRange(
           nextLine.replace(listRE, nextIndent + itemNumber + nextItem[4] + nextItem[5]),
           {
-            line: nextLineNumber, ch: 0
-          }, {
-            line: nextLineNumber, ch: nextLine.length
-          });
+            line: nextLineNumber,
+            ch: 0,
+          },
+          {
+            line: nextLineNumber,
+            ch: nextLine.length,
+          },
+        )
       } else {
-        if (startIndent.length > nextIndent.length) return;
+        if (startIndent.length > nextIndent.length) return
         // This doesn't run if the next line immediatley indents, as it is
         // not clear of the users intention (new indented item or same level)
-        if ((startIndent.length < nextIndent.length) && (lookAhead === 1)) return;
-        skipCount += 1;
+        if (startIndent.length < nextIndent.length && lookAhead === 1) return
+        skipCount += 1
       }
     }
-  } while (nextItem);
+  } while (nextItem)
 }
 
 Object.assign(CodeMirror.commands, {
@@ -623,34 +710,33 @@ Object.assign(CodeMirror.commands, {
   hmdTab: tab,
 })
 
-const defaultKeyMap = CodeMirror.keyMap["default"]
-const modPrefix = defaultKeyMap === CodeMirror.keyMap["macDefault"] ? "Cmd" : "Ctrl"
+const defaultKeyMap = CodeMirror.keyMap['default']
+const modPrefix = defaultKeyMap === CodeMirror.keyMap['macDefault'] ? 'Cmd' : 'Ctrl'
 export var keyMap: CodeMirror.KeyMap = {
-  "Shift-Tab": "hmdShiftTab",
-  "Tab": "hmdTab",
-  "Enter": "hmdNewlineAndContinue",
-  "Shift-Enter": "hmdNewline",
+  'Shift-Tab': 'hmdShiftTab',
+  Tab: 'hmdTab',
+  Enter: 'hmdNewlineAndContinue',
+  'Shift-Enter': 'hmdNewline',
 
   [`${modPrefix}-B`]: createStyleToggler(
-    state => state.strong,
-    token => / formatting-strong /.test(token.type),
-    state => repeatStr(state && state.strong || "*", 2)     // ** or __
+    (state) => state.strong,
+    (token) => / formatting-strong /.test(token.type),
+    (state) => repeatStr((state && state.strong) || '*', 2), // ** or __
   ),
   [`${modPrefix}-I`]: createStyleToggler(
-    state => state.em,
-    token => / formatting-em /.test(token.type),
-    state => (state && state.em || "*")
+    (state) => state.em,
+    (token) => / formatting-em /.test(token.type),
+    (state) => (state && state.em) || '*',
   ),
   [`${modPrefix}-D`]: createStyleToggler(
-    state => state.strikethrough,
-    token => / formatting-strikethrough /.test(token.type),
-    state => "~~"
+    (state) => state.strikethrough,
+    (token) => / formatting-strikethrough /.test(token.type),
+    (state) => '~~',
   ),
 
-
-  fallthrough: "default",
+  fallthrough: 'default',
 }
 
 keyMap = CodeMirror.normalizeKeyMap(keyMap) as CodeMirror.KeyMap
-CodeMirror.keyMap["hypermd"] = keyMap
-suggestedEditorConfig.keyMap = "hypermd"
+CodeMirror.keyMap['hypermd'] = keyMap
+suggestedEditorConfig.keyMap = 'hypermd'

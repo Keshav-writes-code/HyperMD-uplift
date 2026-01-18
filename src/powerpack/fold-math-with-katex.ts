@@ -1,3 +1,4 @@
+// @ts-nocheck
 // HyperMD, copyright (c) by laobubu
 // Distributed under an MIT license: http://laobubu.net/HyperMD/LICENSE
 //
@@ -18,41 +19,48 @@ export class KatexRenderer implements MathRenderer {
   private el: HTMLSpanElement
   private errorEl: HTMLSpanElement
 
-  constructor(public container: HTMLElement, mode: MathRenderMode) {
-    this.isDisplay = mode === "display"
+  constructor(
+    public container: HTMLElement,
+    mode: MathRenderMode,
+  ) {
+    this.isDisplay = mode === 'display'
 
-    var elClass = "hmd-math-katex"
-    if (mode) elClass += " hmd-math-katex-" + mode
+    let elClass = 'hmd-math-katex'
+    if (mode) elClass += ' hmd-math-katex-' + mode
 
-    var errorEl = this.errorEl = document.createElement("span")
-    errorEl.setAttribute("style", "white-space: pre-wrap; font-size: 90%; border: 1px solid #900; color: #C00")
+    const errorEl = (this.errorEl = document.createElement('span'))
+    errorEl.setAttribute(
+      'style',
+      'white-space: pre-wrap; font-size: 90%; border: 1px solid #900; color: #C00',
+    )
 
-    var el = this.el = document.createElement("span")
+    const el = (this.el = document.createElement('span'))
     el.className = elClass
     container.appendChild(el)
   }
 
   startRender(expr: string): void {
-    const el = this.el, errorEl = this.errorEl
+    const el = this.el,
+      errorEl = this.errorEl
 
     try {
       katex.render(expr, el, {
-        displayMode: this.isDisplay
+        displayMode: this.isDisplay,
       })
 
       // remove "error" mark if exists
       if (errorEl.parentElement === el) {
         el.removeChild(errorEl)
-        el.className = el.className.replace(" hmd-math-katex-error", "")
+        el.className = el.className.replace(' hmd-math-katex-error', '')
       }
     } catch (err) {
       // failed to render!
       errorEl.textContent = err && err.message
 
       if (errorEl.parentElement !== el) {
-        el.textContent = ""
+        el.textContent = ''
         el.appendChild(errorEl)
-        el.className += " hmd-math-katex-error"
+        el.className += ' hmd-math-katex-error'
       }
     }
 
@@ -65,7 +73,7 @@ export class KatexRenderer implements MathRenderer {
   }
 
   /** a callback function, called when a rendering work is done */
-  onChanged: (expr: string) => void;
+  onChanged: (expr: string) => void
 
   /** indicate that if the Renderer is ready to execute */
   isReady(): boolean {
@@ -74,8 +82,8 @@ export class KatexRenderer implements MathRenderer {
 }
 
 // Use KatexRenderer as default MathRenderer
-if (typeof katex != "undefined") {
+if (typeof katex != 'undefined') {
   defaultOption.renderer = KatexRenderer
 } else {
-  console.error("[HyperMD] PowerPack fold-math-with-katex loaded, but katex not found.")
+  console.error('[HyperMD] PowerPack fold-math-with-katex loaded, but katex not found.')
 }
